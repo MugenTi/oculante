@@ -10,6 +10,20 @@ pub fn main_menu(ui: &mut Ui, state: &mut OculanteState, app: &mut App, gfx: &mu
     ui.horizontal_centered(|ui| {
         use crate::shortcuts::InputEvent::*;
 
+        draw_hamburger_menu(ui, state, app);
+
+        // Move folder and hamburger to the left
+        if tooltip(
+            unframed_button_colored(FOLDER, state.file_browser_visible, ui),
+            "Browse for an image",
+            &lookup(&state.persistent_settings.shortcuts, &Browse),
+            ui,
+        )
+        .clicked()
+        {
+            state.file_browser_visible = !state.file_browser_visible;
+        }
+
         // The Close button
         if state.persistent_settings.borderless && unframed_button(X, ui).clicked() {
             app.backend.exit();
@@ -49,58 +63,6 @@ pub fn main_menu(ui: &mut Ui, state: &mut OculanteState, app: &mut App, gfx: &mu
         {
             state.persistent_settings.current_channel = ColorChannel::Rgba;
             changed_channels = true;
-        }
-
-        if window_x > ui.cursor().left() + 110. {
-            ui.add_enabled_ui(!state.persistent_settings.edit_enabled, |ui| {
-                ui.spacing_mut().button_padding = Vec2::new(10., 0.);
-                ui.spacing_mut().interact_size.y = BUTTON_HEIGHT_SMALL;
-                ui.spacing_mut().combo_width = 1.;
-                ui.spacing_mut().icon_width = 0.;
-
-                let color = if ui.style().visuals.dark_mode {
-                    Color32::WHITE
-                } else {
-                    Color32::BLACK
-                };
-                ui.style_mut().visuals.widgets.inactive.fg_stroke = Stroke::new(1., color);
-
-                if !ui.style().visuals.dark_mode {
-                    ui.style_mut().visuals.override_text_color = Some(Color32::WHITE);
-                    ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::BLACK;
-                    ui.style_mut().visuals.widgets.hovered.weak_bg_fill = Color32::BLACK;
-                }
-
-                egui::ComboBox::from_id_source("channels")
-                    .icon(blank_icon)
-                    .selected_text(RichText::new(
-                        state
-                            .persistent_settings
-                            .current_channel
-                            .to_string()
-                            .to_uppercase(),
-                    ))
-                    .show_ui(ui, |ui| {
-                        for channel in ColorChannel::iter() {
-                            let r = ui.selectable_value(
-                                &mut state.persistent_settings.current_channel,
-                                channel,
-                                RichText::new(channel.to_string().to_uppercase()),
-                            );
-
-                            if tooltip(
-                                r,
-                                &channel.to_string(),
-                                &channel.hotkey(&state.persistent_settings.shortcuts),
-                                ui,
-                            )
-                            .clicked()
-                            {
-                                changed_channels = true;
-                            }
-                        }
-                    });
-            });
         }
 
         if changed_channels && state.current_image.is_some() {
@@ -150,21 +112,35 @@ pub fn main_menu(ui: &mut Ui, state: &mut OculanteState, app: &mut App, gfx: &mu
             {
                 state.persistent_settings.info_enabled = !state.persistent_settings.info_enabled;
             }
-            if window_x > ui.cursor().left() + 80.
-                && tooltip(
-                    unframed_button_colored(
-                        PENCIL_SIMPLE_LINE,
-                        state.persistent_settings.edit_enabled,
-                        ui,
-                    ),
-                    "Edit the image",
-                    &lookup(&state.persistent_settings.shortcuts, &EditMode),
-                    ui,
-                )
-                .clicked()
-            {
-                state.persistent_settings.edit_enabled = !state.persistent_settings.edit_enabled;
-            }
+        }
+
+        if tooltip(
+            unframed_button(MOVE, ui),
+            "Reset view",
+            &lookup(&state.persistent_settings.shortcuts, &ResetView),
+            ui,
+        )
+        .clicked()
+        {
+            state.reset_image = true;
+        }
+
+        if tooltip(
+            unframed_button(FRAME, ui),
+            "View 1:1",
+            &lookup(&state.persistent_settings.shortcuts, &ZoomActualSize),
+            ui,
+        )
+        .clicked()
+        {
+            set_zoom(
+                1.0,
+                Some(nalgebra::Vector2::new(
+                    app.window().width() as f32 / 2.,
+                    app.window().height() as f32 / 2.,
+                )),
+                state,
+            );
         }
 
         if window_x > ui.cursor().left() + 80.
@@ -190,50 +166,6 @@ pub fn main_menu(ui: &mut Ui, state: &mut OculanteState, app: &mut App, gfx: &mu
         {
             state.always_on_top = !state.always_on_top;
             app.window().set_always_on_top(state.always_on_top);
-        }
-
-        if state.current_path.is_some() && window_x > ui.cursor().left() + 80. {
-            let modal = show_modal(
-                ui.ctx(),
-                format!(
-                    "Are you sure you want to move {} to the trash?",
-                    state
-                        .current_path
-                        .clone()
-                        .unwrap_or_default()
-                        .file_name()
-                        .map(|s| s.to_string_lossy())
-                        .unwrap_or_default()
-                ),
-                |_| {
-                    delete_file(state);
-                },
-                "delete",
-            );
-
-            if tooltip(
-                unframed_button(TRASH, ui),
-                "Move file to trash",
-                &lookup(&state.persistent_settings.shortcuts, &DeleteFile),
-                ui,
-            )
-            .clicked()
-            {
-                modal.open();
-            }
-        }
-
-        if state.current_texture.get().is_some()
-            && window_x > ui.cursor().left() + 80.
-            && tooltip(
-                unframed_button(PLACEHOLDER, ui),
-                "Clear image",
-                &lookup(&state.persistent_settings.shortcuts, &ClearImage),
-                ui,
-            )
-            .clicked()
-        {
-            clear_image(state);
         }
 
         if state.scrubber.len() > 1 && window_x > ui.cursor().left() {
@@ -279,19 +211,121 @@ pub fn main_menu(ui: &mut Ui, state: &mut OculanteState, app: &mut App, gfx: &mu
 
         drag_area(ui, state, app);
 
-        ui.add_space(ui.available_width() - ICON_SIZE * 2. - ICON_SIZE / 2.);
+        // Use with_layout for right-aligned elements
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            // Move RGBA selector here
+            if window_x > ui.cursor().left() + 110. {
+                ui.add_enabled_ui(!state.persistent_settings.edit_enabled, |ui| {
+                    ui.spacing_mut().button_padding = Vec2::new(10., 0.);
+                    ui.spacing_mut().interact_size.y = BUTTON_HEIGHT_SMALL;
+                    ui.spacing_mut().combo_width = 1.;
+                    ui.spacing_mut().icon_width = 0.;
 
-        if unframed_button(FOLDER, ui)
-            .on_hover_text("Browse for an image")
-            .clicked()
-        {
-            #[cfg(feature = "file_open")]
-            browse_for_image_path(state);
-            #[cfg(not(feature = "file_open"))]
-            ui.ctx().memory_mut(|w| w.open_popup(Id::new("OPEN")));
-        }
+                    let color = if ui.style().visuals.dark_mode {
+                        Color32::WHITE
+                    } else {
+                        Color32::BLACK
+                    };
+                    ui.style_mut().visuals.widgets.inactive.fg_stroke = Stroke::new(1., color);
 
-        draw_hamburger_menu(ui, state, app);
+                    if !ui.style().visuals.dark_mode {
+                        ui.style_mut().visuals.override_text_color = Some(Color32::WHITE);
+                        ui.style_mut().visuals.widgets.inactive.weak_bg_fill = Color32::BLACK;
+                        ui.style_mut().visuals.widgets.hovered.weak_bg_fill = Color32::BLACK;
+                    }
+
+                    egui::ComboBox::from_id_source("channels")
+                        .icon(blank_icon)
+                        .selected_text(RichText::new(
+                            state
+                                .persistent_settings
+                                .current_channel
+                                .to_string()
+                                .to_uppercase(),
+                        ))
+                        .show_ui(ui, |ui| {
+                            for channel in ColorChannel::iter() {
+                                let r = ui.selectable_value(
+                                    &mut state.persistent_settings.current_channel,
+                                    channel,
+                                    RichText::new(channel.to_string().to_uppercase()),
+                                );
+
+                                if tooltip(
+                                    r,
+                                    &channel.to_string(),
+                                    &channel.hotkey(&state.persistent_settings.shortcuts),
+                                    ui,
+                                )
+                                .clicked()
+                                {
+                                    changed_channels = true;
+                                }
+                            }
+                        });
+                });
+            }
+
+            if state.current_texture.get().is_some()
+                && window_x > ui.cursor().left() + 80.
+                && tooltip(
+                    unframed_button(PLACEHOLDER, ui),
+                    "Clear image",
+                    &lookup(&state.persistent_settings.shortcuts, &ClearImage),
+                    ui,
+                )
+                .clicked()
+            {
+                clear_image(state);
+            }
+
+            if state.current_path.is_some() && window_x > ui.cursor().left() + 80. {
+                let modal = show_modal(
+                    ui.ctx(),
+                    format!(
+                        "Are you sure you want to move {} to the trash?",
+                        state
+                            .current_path
+                            .clone()
+                            .unwrap_or_default()
+                            .file_name()
+                            .map(|s| s.to_string_lossy())
+                            .unwrap_or_default()
+                    ),
+                    |_| {
+                        delete_file(state);
+                    },
+                    "delete",
+                );
+
+                if tooltip(
+                    unframed_button(TRASH, ui),
+                    "Move file to trash",
+                    &lookup(&state.persistent_settings.shortcuts, &DeleteFile),
+                    ui,
+                )
+                .clicked()
+                {
+                    modal.open();
+                }
+            }
+
+            if window_x > ui.cursor().left() + 80.
+                && tooltip(
+                    unframed_button_colored(
+                        PENCIL_SIMPLE_LINE,
+                        state.persistent_settings.edit_enabled,
+                        ui,
+                    ),
+                    "Edit the image",
+                    &lookup(&state.persistent_settings.shortcuts, &EditMode),
+                    ui,
+                )
+                .clicked()
+            {
+                state.persistent_settings.edit_enabled = !state.persistent_settings.edit_enabled;
+            }
+        });
     });
 }
 
@@ -428,3 +462,4 @@ pub fn draw_hamburger_menu(ui: &mut Ui, state: &mut OculanteState, app: &mut App
         });
     });
 }
+

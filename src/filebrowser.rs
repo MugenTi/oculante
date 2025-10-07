@@ -15,7 +15,7 @@ use std::{
 };
 use strum::IntoEnumIterator;
 
-fn load_recent_dir() -> Result<PathBuf> {
+pub fn load_recent_dir() -> Result<PathBuf> {
     Ok(PathBuf::from(read_to_string(
         dirs::cache_dir()
             .context("Can't get cache dir")?

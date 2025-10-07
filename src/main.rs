@@ -21,6 +21,7 @@ use notan::egui::FontDefinitions;
 use notan::egui::FontFamily;
 use notan::egui::FontTweak;
 use notan::egui::Id;
+use notan::egui::Key;
 use notan::prelude::*;
 use oculante::comparelist::CompareItem;
 use std::io::{stdin, IsTerminal, Read};
@@ -514,7 +515,7 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
                 browse_for_image_path(state);
                 #[cfg(not(feature = "file_open"))]
                 {
-                    state.filebrowser_id = Some("OPEN".into());
+                    state.file_browser_visible = !state.file_browser_visible;
                 }
             }
 
@@ -1031,8 +1032,46 @@ fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut O
     let mut info_panel_color = egui::Color32::from_gray(200);
     let egui_output = plugins.egui(|ctx| {
         state.toasts.show(ctx);
-        if let Some(id) = state.filebrowser_id.take() {
-            ctx.memory_mut(|w| w.open_popup(Id::new(&id)));
+
+        #[cfg(not(feature = "file_open"))]
+        {
+            let mut is_open = state.file_browser_visible;
+            if state.file_browser_visible {
+                egui::Window::new("Browse")
+                    .collapsible(false)
+                    .open(&mut is_open)
+                    .resizable(true)
+                    .default_width(822.)
+                    .default_height(600.)
+                    .show(ctx, |ui| {
+                        let mut path = ctx
+                            .data(|r| r.get_temp::<PathBuf>(Id::new("FBPATH")))
+                            .unwrap_or(filebrowser::load_recent_dir().unwrap_or_default());
+
+                        filebrowser::browse(
+                            &mut path,
+                            SUPPORTED_EXTENSIONS,
+                            &mut state.volatile_settings,
+                            false, // save = false
+                            |p| {
+                                let _ = state.load_channel.0.clone().send(p.to_path_buf());
+                                // Hide browser after selection
+                                state.file_browser_visible = false;
+                            },
+                            ui,
+                        );
+
+                        if ui.ctx().input(|r| r.key_pressed(Key::Escape)) {
+                            state.file_browser_visible = false;
+                        }
+                        ctx.data_mut(|w| w.insert_temp(Id::new("FBPATH"), path));
+                    });
+
+                // If the window was closed, update the state.
+                if !is_open {
+                    state.file_browser_visible = false;
+                }
+            }
         }
 
         if !state.pointer_over_ui
@@ -1048,22 +1087,7 @@ fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut O
         // set info panel color dynamically
         info_panel_color = ctx.style().visuals.panel_fill;
 
-        // open a file browser if requested
-        #[cfg(not(feature = "file_open"))]
-        {
-            if ctx.memory(|w| w.is_popup_open(Id::new("OPEN"))) {
-                filebrowser::browse_modal(
-                    false,
-                    SUPPORTED_EXTENSIONS,
-                    &mut state.volatile_settings,
-                    |p| {
-                        let _ = state.load_channel.0.clone().send(p.to_path_buf());
-                        ctx.memory_mut(|w| w.close_popup());
-                    },
-                    ctx,
-                );
-            }
-        }
+        
 
         // the top menu bar
         if !state.persistent_settings.zen_mode {
