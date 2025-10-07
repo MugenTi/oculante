@@ -57,6 +57,7 @@ pub struct OculanteState {
     /// Is the image fully loaded?
     pub is_loaded: bool,
     pub window_size: Vector2<f32>,
+    pub last_window_pos: (i32, i32),
     pub cursor: Vector2<f32>,
     pub cursor_relative: Vector2<f32>,
     pub sampled_color: [f32; 4],
@@ -161,6 +162,7 @@ impl<'b> Default for OculanteState {
             always_on_top: Default::default(),
             network_mode: Default::default(),
             window_size: Default::default(),
+            last_window_pos: Default::default(),
             fullscreen_offset: Default::default(),
             scrubber: Default::default(),
             checker_texture: Default::default(),

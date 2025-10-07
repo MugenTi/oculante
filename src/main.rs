@@ -107,8 +107,12 @@ fn main() -> Result<(), String> {
     match settings::VolatileSettings::load() {
         Ok(volatile_settings) => {
             if volatile_settings.window_geometry != Default::default() {
-                window_config.width = volatile_settings.window_geometry.1 .0;
-                window_config.height = volatile_settings.window_geometry.1 .1;
+                window_config = window_config.set_position(
+                    volatile_settings.window_geometry.0.0,
+                    volatile_settings.window_geometry.0.1,
+                );
+                window_config.width = volatile_settings.window_geometry.1.0 as u32;
+                window_config.height = volatile_settings.window_geometry.1.1 as u32;
             }
         }
         Err(e) => error!("Could not load volatile settings: {e}"),
@@ -585,10 +589,12 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
         Event::WindowResize { width, height } => {
             //TODO: remove this if save on exit works
             state.volatile_settings.window_geometry.1 = (width, height);
-            state.volatile_settings.window_geometry.0 = (
-                app.backend.window().position().0 as u32,
-                app.backend.window().position().1 as u32,
-            );
+            let pos = app.window().position();
+            state.volatile_settings.window_geometry.0 = (pos.0, pos.1);
+
+            // Save the volatile settings whenever the window is resized.
+            _ = state.volatile_settings.save_blocking();
+
             // By resetting the image, we make it fill the window on resize
             if state.persistent_settings.fit_image_on_window_resize {
                 state.reset_image = true;
@@ -602,10 +608,7 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
             info!("About to exit");
             // save position
             state.volatile_settings.window_geometry = (
-                (
-                    app.window().position().0 as u32,
-                    app.window().position().1 as u32,
-                ),
+                app.window().position(),
                 app.window().size(),
             );
             _ = state.persistent_settings.save_blocking();
@@ -687,6 +690,16 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
 fn update(app: &mut App, state: &mut OculanteState) {
     if state.first_start {
         app.window().set_always_on_top(false);
+        state.last_window_pos = app.window().position();
+    }
+
+    // Check if window has moved and save if so
+    let current_pos = app.window().position();
+    if current_pos != state.last_window_pos {
+        state.last_window_pos = current_pos;
+        state.volatile_settings.window_geometry.0 = (current_pos.0, current_pos.1);
+        _ = state.volatile_settings.save_blocking();
+        trace!("Window moved, saved position.");
     }
 
     if let Some(p) = &state.current_path {
@@ -695,21 +708,6 @@ fn update(app: &mut App, state: &mut OculanteState) {
             trace!("chk mod {}", t);
             state.player.check_modified(p);
         }
-    }
-
-    // Save every 5 secs
-    let t = app.timer.elapsed_f32() % 5.0;
-    if t <= 0.01 {
-        state.volatile_settings.window_geometry = (
-            (
-                app.window().position().0 as u32,
-                app.window().position().1 as u32,
-            ),
-            app.window().size(),
-        );
-        _ = state.persistent_settings.save_blocking();
-        _ = state.volatile_settings.save_blocking();
-        trace!("Save {t}");
     }
 
     let mouse_pos = app.mouse.position();

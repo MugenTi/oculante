@@ -150,7 +150,7 @@ impl PersistentSettings {
 pub struct VolatileSettings {
     pub favourite_images: HashSet<PathBuf>,
     pub recent_images: Vec<PathBuf>,
-    pub window_geometry: ((u32, u32), (u32, u32)),
+    pub window_geometry: ((i32, i32), (u32, u32)),
     pub last_open_directory: PathBuf,
     pub folder_bookmarks: BTreeSet<PathBuf>,
     pub encoding_options: Vec<FileEncoder>,
