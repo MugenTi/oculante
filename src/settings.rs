@@ -153,6 +153,7 @@ pub struct VolatileSettings {
     pub favourite_images: HashSet<PathBuf>,
     pub recent_images: Vec<PathBuf>,
     pub window_geometry: ((i32, i32), (u32, u32)),
+    pub is_fullscreen: bool,
     pub last_open_directory: PathBuf,
     pub folder_bookmarks: BTreeSet<PathBuf>,
     pub encoding_options: Vec<FileEncoder>,
@@ -164,6 +165,7 @@ impl Default for VolatileSettings {
             favourite_images: Default::default(),
             recent_images: Default::default(),
             window_geometry: Default::default(),
+            is_fullscreen: false,
             last_open_directory: Default::default(),
             folder_bookmarks: Default::default(),
             encoding_options: [

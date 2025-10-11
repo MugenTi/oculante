@@ -85,6 +85,7 @@ pub struct OculanteState {
     pub volatile_settings: VolatileSettings,
     pub always_on_top: bool,
     pub network_mode: bool,
+    pub is_fullscreen: bool,
     /// how long the toast message appears
     /// data to transform image once fullscreen is entered/left
     pub fullscreen_offset: Option<(i32, i32)>,
@@ -160,6 +161,7 @@ impl<'b> Default for OculanteState {
             persistent_settings: PersistentSettings::load().unwrap_or_default(),
             volatile_settings: VolatileSettings::load().unwrap_or_default(),
             always_on_top: Default::default(),
+            is_fullscreen: false,
             network_mode: Default::default(),
             window_size: Default::default(),
             last_window_pos: Default::default(),

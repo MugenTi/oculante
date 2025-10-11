@@ -631,6 +631,9 @@ pub fn toggle_fullscreen(app: &mut App, state: &mut OculanteState) {
         state.image_geometry.offset.y -= sf.1 as f32;
     }
     app.window().set_fullscreen(!fullscreen);
+    state.is_fullscreen = !fullscreen;
+    state.volatile_settings.is_fullscreen = state.is_fullscreen;
+    _ = state.volatile_settings.save_blocking();
 }
 
 /// Determine if an enxtension is compatible with oculante

@@ -59,6 +59,20 @@ fn main() -> Result<(), String> {
 
     let icon_data = include_bytes!("../icon.ico");
 
+    // Determine window geometry and fullscreen state BEFORE creating the window config
+    let mut start_in_fullscreen = false;
+    let mut loaded_geometry: Option<((i32, i32), (u32, u32))> = None;
+    match settings::VolatileSettings::load() {
+        Ok(volatile_settings) => {
+            if volatile_settings.is_fullscreen {
+                start_in_fullscreen = true;
+            } else if volatile_settings.window_geometry != Default::default() {
+                loaded_geometry = Some(volatile_settings.window_geometry);
+            }
+        }
+        Err(e) => error!("Could not load volatile settings: {e}"),
+    }
+
     let mut window_config = WindowConfig::new()
         .set_title(&format!("Oculante | {}", env!("CARGO_PKG_VERSION")))
         .set_size(1026, 600) // window's size
@@ -66,7 +80,15 @@ fn main() -> Result<(), String> {
         .set_window_icon_data(Some(icon_data))
         .set_taskbar_icon_data(Some(icon_data))
         .set_multisampling(0)
+        .set_fullscreen(start_in_fullscreen) // Use the flag here
         .set_app_id("oculante");
+
+    // Apply geometry if it was loaded and we are not starting in fullscreen
+    if let Some(geometry) = loaded_geometry {
+        window_config = window_config.set_position(geometry.0.0, geometry.0.1);
+        window_config.width = geometry.1.0 as u32;
+        window_config.height = geometry.1.1 as u32;
+    }
 
     #[cfg(target_os = "windows")]
     {
@@ -101,22 +123,6 @@ fn main() -> Result<(), String> {
     {
         // MacOS needs an incredible dance performed just to open a file
         let _ = oculante::mac::launch();
-    }
-
-    // Unfortunately we need to load the volatile settings here, too - the window settings need
-    // to be set before window creation
-    match settings::VolatileSettings::load() {
-        Ok(volatile_settings) => {
-            if volatile_settings.window_geometry != Default::default() {
-                window_config = window_config.set_position(
-                    volatile_settings.window_geometry.0.0,
-                    volatile_settings.window_geometry.0.1,
-                );
-                window_config.width = volatile_settings.window_geometry.1.0 as u32;
-                window_config.height = volatile_settings.window_geometry.1.1 as u32;
-            }
-        }
-        Err(e) => error!("Could not load volatile settings: {e}"),
     }
 
     // Unfortunately we need to load the persistent settings here, too - the window settings need
@@ -700,6 +706,7 @@ fn update(app: &mut App, state: &mut OculanteState) {
     if state.first_start {
         app.window().set_always_on_top(false);
         state.last_window_pos = app.window().position();
+        state.is_fullscreen = app.window().is_fullscreen();
     }
 
     // Check if window has moved and save if so
