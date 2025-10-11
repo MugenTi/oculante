@@ -549,41 +549,49 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
                 clear_image(state);
             }
             if key_pressed(app, state, ZoomIn) {
-                let delta = zoomratio(3.5, state.image_geometry.scale);
-                let new_scale = state.image_geometry.scale + delta;
-                // limit scale
+                let scale: f32 = state.image_geometry.scale;
+                let new_scale: f32 = get_new_scale(
+                    scale,
+                    state.persistent_settings.zoom_multiplier,
+                    false,
+                );
                 if new_scale > 0.05 && new_scale < 40. {
                     // We want to zoom towards the center
                     let center: Vector2<f32> = nalgebra::Vector2::new(
                         app.window().width() as f32 / 2.,
                         app.window().height() as f32 / 2.,
                     );
-                    state.image_geometry.offset -= scale_pt(
+                    let scale_inc: f32 = scale - new_scale;
+                    state.image_geometry.offset += scale_pt(
                         state.image_geometry.offset,
                         center,
-                        state.image_geometry.scale,
-                        delta,
+                        scale,
+                        scale_inc,
                     );
-                    state.image_geometry.scale += delta;
+                    state.image_geometry.scale = new_scale;
                 }
             }
             if key_pressed(app, state, ZoomOut) {
-                let delta = zoomratio(-3.5, state.image_geometry.scale);
-                let new_scale = state.image_geometry.scale + delta;
-                // limit scale
+                let scale: f32 = state.image_geometry.scale;
+                let new_scale: f32 = get_new_scale(
+                    scale,
+                    state.persistent_settings.zoom_multiplier,
+                    true,
+                );
                 if new_scale > 0.05 && new_scale < 40. {
                     // We want to zoom towards the center
                     let center: Vector2<f32> = nalgebra::Vector2::new(
                         app.window().width() as f32 / 2.,
                         app.window().height() as f32 / 2.,
                     );
-                    state.image_geometry.offset -= scale_pt(
+                    let scale_inc: f32 = scale - new_scale;
+                    state.image_geometry.offset += scale_pt(
                         state.image_geometry.offset,
                         center,
-                        state.image_geometry.scale,
-                        delta,
+                        scale,
+                        scale_inc,
                     );
-                    state.image_geometry.scale += delta;
+                    state.image_geometry.scale = new_scale;
                 }
             }
         }
@@ -627,24 +635,24 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
                         next_image(state)
                     }
                 } else {
-                    let divisor = if cfg!(target_os = "macos") { 0.1 } else { 10. };
-                    // Normal scaling
-                    let delta = zoomratio(
-                        ((delta_y / divisor) * state.persistent_settings.zoom_multiplier)
-                            .clamp(-5.0, 5.0),
-                        state.image_geometry.scale,
+                    let zoom_out: bool = delta_y < 0.0;
+                    let scale: f32 = state.image_geometry.scale;
+                    let new_scale: f32 = get_new_scale(
+                        scale,
+                        state.persistent_settings.zoom_multiplier,
+                        zoom_out,
                     );
-                    trace!("Delta {delta}, raw {delta_y}");
-                    let new_scale = state.image_geometry.scale + delta;
+
                     // limit scale
                     if new_scale > 0.01 && new_scale < 40. {
-                        state.image_geometry.offset -= scale_pt(
+                        let scale_inc: f32 = scale - new_scale;
+                        state.image_geometry.offset += scale_pt(
                             state.image_geometry.offset,
                             state.cursor,
-                            state.image_geometry.scale,
-                            delta,
+                            scale,
+                            scale_inc,
                         );
-                        state.image_geometry.scale += delta;
+                        state.image_geometry.scale = new_scale;
                     }
                 }
             }
