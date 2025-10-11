@@ -128,6 +128,10 @@ pub fn settings_ui(app: &mut App, ctx: &Context, state: &mut OculanteState, _gfx
                                         ;
                                     }, ui);
 
+                                    configuration_item_ui("Show status bar", "Shows a status bar at the bottom of the window with image information.", |ui| {
+                                        ui.styled_checkbox(&mut state.persistent_settings.show_status_bar, "");
+                                    }, ui);
+
                                     configuration_item_ui("Wrap images at folder boundaries", "Repeats the current directory when you move past the first or last file in the current directory.", |ui| {
                                         if ui
                                         .styled_checkbox(&mut state.persistent_settings.wrap_folder, "")

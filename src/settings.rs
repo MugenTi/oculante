@@ -50,6 +50,7 @@ pub struct PersistentSettings {
     /// How many images to keep in cache
     pub max_cache: usize,
     pub show_scrub_bar: bool,
+    pub show_status_bar: bool,
     pub wrap_folder: bool,
     /// Whether to keep the image edit stack
     pub keep_edits: bool,
@@ -88,6 +89,7 @@ impl Default for PersistentSettings {
             keep_view: Default::default(),
             max_cache: 30,
             show_scrub_bar: Default::default(),
+            show_status_bar: true,
             wrap_folder: true,
             keep_edits: Default::default(),
             title_format: "{APP} | {VERSION} | {FULLPATH}".into(),

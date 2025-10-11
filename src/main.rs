@@ -1106,6 +1106,27 @@ fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut O
                 .show(ctx, |ui| {
                     main_menu(ui, state, app, gfx);
                 });
+
+            if state.persistent_settings.show_status_bar {
+                egui::TopBottomPanel::bottom("statusbar")
+                    .show_separator_line(false)
+                    .show(ctx, |ui| {
+                        if state.current_image.is_some() {
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                ui.add_space(5.0);
+                                let dims = state.image_geometry.dimensions;
+                                if dims.0 > 0 {
+                                    ui.label(format!("{} x {}", dims.0, dims.1));
+                                }
+
+                                ui.separator();
+
+                                let scale_percent = state.image_geometry.scale * 100.0;
+                                ui.label(format!("{:.1}%", scale_percent));
+                            });
+                        }
+                    });
+            }
         }
         if state.persistent_settings.zen_mode && state.persistent_settings.borderless {
             egui::TopBottomPanel::top("menu_zen")
