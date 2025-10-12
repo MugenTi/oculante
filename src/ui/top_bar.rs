@@ -398,6 +398,8 @@ pub fn draw_hamburger_menu(ui: &mut Ui, state: &mut OculanteState, app: &mut App
             }
 
             if ui.styled_button(format!("{EXIT} Quit")).clicked() {
+                _ = state.persistent_settings.save_blocking();
+                _ = state.volatile_settings.save_blocking();
                 app.backend.exit();
             }
 

@@ -631,6 +631,9 @@ pub fn toggle_fullscreen(app: &mut App, state: &mut OculanteState) {
         state.image_geometry.offset.y -= sf.1 as f32;
     }
     app.window().set_fullscreen(!fullscreen);
+    state.is_fullscreen = !fullscreen;
+    state.volatile_settings.is_fullscreen = state.is_fullscreen;
+    _ = state.volatile_settings.save_blocking();
 }
 
 /// Determine if an enxtension is compatible with oculante
@@ -695,31 +698,11 @@ pub fn get_new_scale(
     zoom_multiplier :f32,
     zoom_out: bool,
 ) -> f32 {
-    let rate: f32 = if scale < 1.0 {
-        0.9 / zoom_multiplier
-    } else if scale > 1.0 {
-        1.1 * zoom_multiplier
-    } else { // scale == 1.0
-        if zoom_out {
-            0.9 / zoom_multiplier
-        } else {
-            1.1 * zoom_multiplier
-        }
-    };
-    if scale < 1.0 {
-        if zoom_out {
-            scale * rate
-        } else {
-            scale / rate
-        }
-    } else if scale > 1.0 {
-        if zoom_out {
-            scale / rate
-        } else {
-            scale * rate
-        }
-    } else { // scale == 1.0
+    let rate: f32 = 1.0 + 0.1 * zoom_multiplier;
+    if zoom_out {
         scale * rate
+    } else {
+        scale / rate
     }
 }
 
