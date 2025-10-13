@@ -65,6 +65,7 @@ pub struct PersistentSettings {
     /// How much to scale SVG images when rendering
     pub svg_scale: f32,
     pub zen_mode: bool,
+    pub zen_mode_normal: bool,
     pub theme: ColorTheme,
     pub linear_mag_filter: bool,
     pub linear_min_filter: bool,
@@ -101,6 +102,7 @@ impl Default for PersistentSettings {
             current_channel: ColorChannel::Rgba,
             svg_scale: 1.0,
             zen_mode: false,
+            zen_mode_normal: false,
             theme: ColorTheme::Dark,
             linear_mag_filter: false,
             linear_min_filter: true,

@@ -945,12 +945,12 @@ pub fn set_title(app: &mut App, state: &mut OculanteState) {
             10,
         );
 
-    // if state.persistent_settings.zen_mode {
-    //     title_string.push_str(&format!(
-    //         "          '{}' to disable zen mode",
-    //         lookup(&state.persistent_settings.shortcuts, &InputEvent::ZenMode)
-    //     ));
-    // }
+    if state.persistent_settings.zen_mode {
+        title_string.push_str(&format!(
+            "          '{}' to disable zen mode",
+            lookup(&state.persistent_settings.shortcuts, &InputEvent::ZenMode)
+        ));
+    }
 
     app.window().set_title(&title_string);
 }
@@ -959,14 +959,20 @@ pub fn fit(oldvalue: f32, oldmin: f32, oldmax: f32, newmin: f32, newmax: f32) ->
     (((oldvalue - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin
 }
 
+pub fn set_zen_mode(state: &mut OculanteState, app: &mut App, enabled: bool) {
+        state.persistent_settings.zen_mode = enabled;
+        set_title(app, state);
+}
+
 pub fn toggle_zen_mode(state: &mut OculanteState, app: &mut App) {
     state.persistent_settings.zen_mode = !state.persistent_settings.zen_mode;
-    // if state.persistent_settings.zen_mode {
-    //     _ = state.message_channel.0.send(Message::Info(format!(
-    //         "Zen mode on. Press '{}' to toggle.",
-    //         lookup(&state.persistent_settings.shortcuts, &InputEvent::ZenMode)
-    //     )));
-    // }
+    state.persistent_settings.zen_mode_normal = state.persistent_settings.zen_mode;
+    if state.persistent_settings.zen_mode {
+        _ = state.message_channel.0.send(Message::Info(format!(
+            "Zen mode on. Press '{}' to toggle.",
+            lookup(&state.persistent_settings.shortcuts, &InputEvent::ZenMode)
+        )));
+    }
     set_title(app, state);
 }
 
