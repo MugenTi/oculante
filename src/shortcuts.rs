@@ -43,6 +43,7 @@ pub enum InputEvent {
     Browse,
     Quit,
     ZenMode,
+    ToggleFullscreenZenReset,
 }
 
 pub type Shortcuts = BTreeMap<InputEvent, SimultaneousKeypresses>;
@@ -129,6 +130,7 @@ impl ShortcutExt for Shortcuts {
             .add_key(InputEvent::LosslessRotateLeft, "LBracket")
             .add_key(InputEvent::LosslessRotateRight, "RBracket")
             .add_key(InputEvent::ZenMode, "Z")
+            .add_key(InputEvent::ToggleFullscreenZenReset, "Return")
             .add_key(InputEvent::DeleteFile, "Delete")
             .add_keys(InputEvent::ClearImage, &["LShift", "Delete"])
             // .add_key(InputEvent::Browse, "F1") // FIXME: As Shortcuts is a HashMap, only the newer key-sequence will be registered
