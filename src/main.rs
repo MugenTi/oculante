@@ -440,6 +440,17 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
             }
             if key_pressed(app, state, ZenMode) {
                 toggle_zen_mode(state, app);
+                state.reset_image = true;
+            }
+            if key_pressed(app, state, PerfectFullscreen) {
+                let is_fullscreen = app.window().is_fullscreen();
+                toggle_fullscreen(app, state);
+                if !is_fullscreen {
+                    set_zen_mode(state, app, true);
+                } else {
+                    set_zen_mode(state, app, state.persistent_settings.zen_mode_normal);
+                }
+                state.reset_image = true;
             }
             if key_pressed(app, state, ZoomActualSize) {
                 set_zoom(1.0, None, state);
@@ -480,9 +491,17 @@ fn process_events(app: &mut App, state: &mut OculanteState, evt: Event) {
                 }
             }
             if key_pressed(app, state, Quit) {
-                _ = state.persistent_settings.save_blocking();
-                _ = state.volatile_settings.save_blocking();
-                app.backend.exit();
+                app.exit();
+            }
+
+            if app.keyboard.was_pressed(KeyCode::Escape) {
+                if app.window().is_fullscreen() {
+                    toggle_fullscreen(app, state);
+                    set_zen_mode(state, app, state.persistent_settings.zen_mode_normal);
+                    state.reset_image = true;
+                } else {
+                    app.exit();
+                }
             }
             #[cfg(feature = "turbo")]
             if key_pressed(app, state, LosslessRotateRight) {
