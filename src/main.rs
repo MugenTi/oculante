@@ -1067,47 +1067,6 @@ fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut O
     let egui_output = plugins.egui(|ctx| {
         state.toasts.show(ctx);
 
-        #[cfg(not(feature = "file_open"))]
-        {
-            let mut is_open = state.file_browser_visible;
-            if state.file_browser_visible {
-                egui::Window::new("Browse")
-                    .collapsible(false)
-                    .open(&mut is_open)
-                    .resizable(true)
-                    .default_width(822.)
-                    .default_height(600.)
-                    .show(ctx, |ui| {
-                        let mut path = ctx
-                            .data(|r| r.get_temp::<PathBuf>(Id::new("FBPATH")))
-                            .unwrap_or(filebrowser::load_recent_dir().unwrap_or_default());
-
-                        filebrowser::browse(
-                            &mut path,
-                            SUPPORTED_EXTENSIONS,
-                            &mut state.volatile_settings,
-                            false, // save = false
-                            |p| {
-                                let _ = state.load_channel.0.clone().send(p.to_path_buf());
-                                // Hide browser after selection
-                                state.file_browser_visible = false;
-                            },
-                            ui,
-                        );
-
-                        if ui.ctx().input(|r| r.key_pressed(Key::Escape)) {
-                            state.file_browser_visible = false;
-                        }
-                        ctx.data_mut(|w| w.insert_temp(Id::new("FBPATH"), path));
-                    });
-
-                // If the window was closed, update the state.
-                if !is_open {
-                    state.file_browser_visible = false;
-                }
-            }
-        }
-
         if !state.pointer_over_ui
             && !state.mouse_grab
             && ctx.input(|r| {
@@ -1225,6 +1184,47 @@ fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut O
                 debug!("Image has been reset.");
                 state.reset_image = false;
                 app.window().request_frame();
+            }
+        }
+
+        #[cfg(not(feature = "file_open"))]
+        {
+            let mut is_open = state.file_browser_visible;
+            if state.file_browser_visible {
+                egui::Window::new("Browse")
+                    .collapsible(false)
+                    .open(&mut is_open)
+                    .resizable(true)
+                    .default_width(822.)
+                    .default_height(600.)
+                    .show(ctx, |ui| {
+                        let mut path = ctx
+                            .data(|r| r.get_temp::<PathBuf>(Id::new("FBPATH")))
+                            .unwrap_or(filebrowser::load_recent_dir().unwrap_or_default());
+
+                        filebrowser::browse(
+                            &mut path,
+                            SUPPORTED_EXTENSIONS,
+                            &mut state.volatile_settings,
+                            false, // save = false
+                            |p| {
+                                let _ = state.load_channel.0.clone().send(p.to_path_buf());
+                                // Hide browser after selection
+                                state.file_browser_visible = false;
+                            },
+                            ui,
+                        );
+
+                        if ui.ctx().input(|r| r.key_pressed(Key::Escape)) {
+                            state.file_browser_visible = false;
+                        }
+                        ctx.data_mut(|w| w.insert_temp(Id::new("FBPATH"), path));
+                    });
+
+                // If the window was closed, update the state.
+                if !is_open {
+                    state.file_browser_visible = false;
+                }
             }
         }
 
