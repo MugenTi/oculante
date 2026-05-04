@@ -23,6 +23,12 @@ pub enum InputEvent {
     ZenMode,
     PerfectFullscreen,
     ToggleThumbnails,
+    SaveLayout1,
+    SaveLayout2,
+    SaveLayout3,
+    LoadLayout1,
+    LoadLayout2,
+    LoadLayout3,
     Exit,
 }
 
@@ -47,6 +53,12 @@ impl InputEvent {
             InputEvent::ZenMode => "Toggle Zen Mode",
             InputEvent::PerfectFullscreen => "Fullscreen (Zen + Reset)",
             InputEvent::ToggleThumbnails => "Toggle Thumbnails",
+            InputEvent::SaveLayout1 => "Save Layout 1",
+            InputEvent::SaveLayout2 => "Save Layout 2",
+            InputEvent::SaveLayout3 => "Save Layout 3",
+            InputEvent::LoadLayout1 => "Load Layout 1",
+            InputEvent::LoadLayout2 => "Load Layout 2",
+            InputEvent::LoadLayout3 => "Load Layout 3",
             InputEvent::Exit => "Quit Application / Close Window",
         }
     }
@@ -135,6 +147,18 @@ pub fn slint_to_human_readable(key: &str) -> String {
     if key == "\u{f703}" || key == "\u{f061}" || key == SharedString::from(Key::RightArrow).as_str() { return "Right".into(); }
     if key == "\u{f700}" || key == "\u{f062}" || key == SharedString::from(Key::UpArrow).as_str() { return "Up".into(); }
     if key == "\u{f701}" || key == "\u{f063}" || key == SharedString::from(Key::DownArrow).as_str() { return "Down".into(); }
+    if key == SharedString::from(Key::F1).as_str() { return "F1".into(); }
+    if key == SharedString::from(Key::F2).as_str() { return "F2".into(); }
+    if key == SharedString::from(Key::F3).as_str() { return "F3".into(); }
+    if key == SharedString::from(Key::F4).as_str() { return "F4".into(); }
+    if key == SharedString::from(Key::F5).as_str() { return "F5".into(); }
+    if key == SharedString::from(Key::F6).as_str() { return "F6".into(); }
+    if key == SharedString::from(Key::F7).as_str() { return "F7".into(); }
+    if key == SharedString::from(Key::F8).as_str() { return "F8".into(); }
+    if key == SharedString::from(Key::F9).as_str() { return "F9".into(); }
+    if key == SharedString::from(Key::F10).as_str() { return "F10".into(); }
+    if key == SharedString::from(Key::F11).as_str() { return "F11".into(); }
+    if key == SharedString::from(Key::F12).as_str() { return "F12".into(); }
     key.to_string()
 }
 
@@ -150,6 +174,18 @@ pub fn human_readable_to_slint(name: &str) -> String {
         "RIGHT" => "\u{f703}".to_string(),
         "UP" => "\u{f700}".to_string(),
         "DOWN" => "\u{f701}".to_string(),
+        "F1" => SharedString::from(Key::F1).to_string(),
+        "F2" => SharedString::from(Key::F2).to_string(),
+        "F3" => SharedString::from(Key::F3).to_string(),
+        "F4" => SharedString::from(Key::F4).to_string(),
+        "F5" => SharedString::from(Key::F5).to_string(),
+        "F6" => SharedString::from(Key::F6).to_string(),
+        "F7" => SharedString::from(Key::F7).to_string(),
+        "F8" => SharedString::from(Key::F8).to_string(),
+        "F9" => SharedString::from(Key::F9).to_string(),
+        "F10" => SharedString::from(Key::F10).to_string(),
+        "F11" => SharedString::from(Key::F11).to_string(),
+        "F12" => SharedString::from(Key::F12).to_string(),
         _ => name.to_string(),
     }
 }
@@ -196,6 +232,12 @@ impl ShortcutExt for Shortcuts {
         s.insert(InputEvent::BrowseToFileLocation, vec![SimultaneousKeypresses::new("B").ctrl()]);
         s.insert(InputEvent::ZenMode, vec![SimultaneousKeypresses::new("Z")]);
         s.insert(InputEvent::PerfectFullscreen, vec![SimultaneousKeypresses::new("Return")]);
+        s.insert(InputEvent::SaveLayout1, vec![SimultaneousKeypresses::new("F1").shift()]);
+        s.insert(InputEvent::SaveLayout2, vec![SimultaneousKeypresses::new("F2").shift()]);
+        s.insert(InputEvent::SaveLayout3, vec![SimultaneousKeypresses::new("F3").shift()]);
+        s.insert(InputEvent::LoadLayout1, vec![SimultaneousKeypresses::new("F1")]);
+        s.insert(InputEvent::LoadLayout2, vec![SimultaneousKeypresses::new("F2")]);
+        s.insert(InputEvent::LoadLayout3, vec![SimultaneousKeypresses::new("F3")]);
         s
     }
 }

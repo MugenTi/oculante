@@ -156,6 +156,15 @@ impl PersistentSettings {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+pub struct WindowLayout {
+    pub window_position: LogicalPosition,
+    pub window_size: LogicalSize,
+    pub thumbnail_window_position: LogicalPosition,
+    pub thumbnail_window_size: LogicalSize,
+    pub thumbnail_window_visible: bool,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct VolatileSettings {
@@ -167,6 +176,7 @@ pub struct VolatileSettings {
     pub thumbnail_window_position: LogicalPosition,
     pub thumbnail_window_size: LogicalSize,
     pub thumbnail_window_visible: bool,
+    pub layouts: Vec<Option<WindowLayout>>,
     pub last_open_directory: PathBuf,
     pub folder_bookmarks: BTreeSet<PathBuf>,
     pub image_scale: f64,
@@ -197,6 +207,7 @@ impl Default for VolatileSettings {
                 height: 600.0,
             },
             thumbnail_window_visible: false,
+            layouts: vec![None; 3],
             last_open_directory: Default::default(),
             folder_bookmarks: Default::default(),
             image_scale: 1.0,

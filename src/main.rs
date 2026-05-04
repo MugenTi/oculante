@@ -154,6 +154,75 @@ fn update_image_info(ui: &AppWindow) {
     }
 }
 
+fn save_layout(
+    ui: &AppWindow,
+    thumb_ui: &ThumbnailWindow,
+    volatile_settings: &Rc<RefCell<VolatileSettings>>,
+    slot: usize,
+) {
+    let scale_factor = ui.window().scale_factor();
+    let thumb_scale_factor = thumb_ui.window().scale_factor();
+
+    let layout = voutil::settings::WindowLayout {
+        window_position: slint::LogicalPosition::from_physical(ui.window().position(), scale_factor),
+        window_size: slint::LogicalSize::from_physical(ui.window().size(), scale_factor),
+        thumbnail_window_position: slint::LogicalPosition::from_physical(
+            thumb_ui.window().position(),
+            thumb_scale_factor,
+        ),
+        thumbnail_window_size: slint::LogicalSize::from_physical(
+            thumb_ui.window().size(),
+            thumb_scale_factor,
+        ),
+        thumbnail_window_visible: thumb_ui.window().is_visible(),
+    };
+
+    let mut volatile = volatile_settings.borrow_mut();
+    if slot < volatile.layouts.len() {
+        log::info!("Saving layout to slot {}", slot + 1);
+        volatile.layouts[slot] = Some(layout);
+        match volatile.save_blocking() {
+            Ok(_) => {
+                log::info!("Successfully saved volatile settings to disk.");
+                ui.set_status_text(format!("Layout {} saved.", slot + 1).into());
+            }
+            Err(e) => {
+                log::error!("Failed to save volatile settings: {}", e);
+                ui.set_status_text(format!("Failed to save Layout {}: {}", slot + 1, e).into());
+            }
+        }
+    } else {
+        log::warn!("Layout slot {} out of bounds", slot + 1);
+    }
+}
+
+fn load_layout(
+    ui: &AppWindow,
+    thumb_ui: &ThumbnailWindow,
+    volatile_settings: &Rc<RefCell<VolatileSettings>>,
+    slot: usize,
+) {
+    let volatile = volatile_settings.borrow();
+    if slot < volatile.layouts.len() {
+        if let Some(layout) = &volatile.layouts[slot] {
+            ui.window().set_position(layout.window_position);
+            ui.window().set_size(layout.window_size);
+            thumb_ui
+                .window()
+                .set_position(layout.thumbnail_window_position);
+            thumb_ui.window().set_size(layout.thumbnail_window_size);
+            if layout.thumbnail_window_visible {
+                let _ = thumb_ui.show();
+            } else {
+                let _ = thumb_ui.hide();
+            }
+            ui.set_status_text(format!("Layout {} loaded.", slot + 1).into());
+        } else {
+            ui.set_status_text(format!("Layout {} is empty.", slot + 1).into());
+        }
+    }
+}
+
 fn apply_ui_theme(
     main_ui: &AppWindow,
     settings_ui: &SettingsWindow,
@@ -712,10 +781,70 @@ fn main() -> Result<(), slint::PlatformError> {
         }
         false
     });
+    let volatile_settings_clone_for_thumb_shortcuts = volatile_settings.clone();
+    let thumb_ui_handle_for_shortcuts = thumbnail_window.as_weak();
+    let main_window_handle_for_thumb_shortcuts = main_window.as_weak();
+    let persistent_settings_clone_for_thumb_shortcuts = persistent_settings.clone();
+    thumbnail_window.on_shortcut_pressed(move |text, ctrl, alt, shift| {
+        if let Some(ui) = main_window_handle_for_thumb_shortcuts.upgrade() {
+            if let Some(command) = lookup(
+                &persistent_settings_clone_for_thumb_shortcuts.borrow().shortcuts,
+                &text,
+                ctrl,
+                alt,
+                shift,
+            ) {
+                match command {
+                    InputEvent::SaveLayout1 => {
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            save_layout(&ui, &tw, &volatile_settings_clone_for_thumb_shortcuts, 0);
+                        }
+                        return true;
+                    }
+                    InputEvent::SaveLayout2 => {
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            save_layout(&ui, &tw, &volatile_settings_clone_for_thumb_shortcuts, 1);
+                        }
+                        return true;
+                    }
+                    InputEvent::SaveLayout3 => {
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            save_layout(&ui, &tw, &volatile_settings_clone_for_thumb_shortcuts, 2);
+                        }
+                        return true;
+                    }
+                    InputEvent::LoadLayout1 => {
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            load_layout(&ui, &tw, &volatile_settings_clone_for_thumb_shortcuts, 0);
+                        }
+                        return true;
+                    }
+                    InputEvent::LoadLayout2 => {
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            load_layout(&ui, &tw, &volatile_settings_clone_for_thumb_shortcuts, 1);
+                        }
+                        return true;
+                    }
+                    InputEvent::LoadLayout3 => {
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            load_layout(&ui, &tw, &volatile_settings_clone_for_thumb_shortcuts, 2);
+                        }
+                        return true;
+                    }
+                    _ => {}
+                }
+            }
+        }
+        false
+    });
+
     let shortcut_settings_clone = persistent_settings.clone();
     let shortcut_ui_handle = main_window.as_weak();
     let shortcut_settings_window_handle = settings_window.as_weak();
+    let shortcut_thumbnail_window_handle = thumbnail_window.as_weak();
+    let volatile_settings_clone_for_shortcuts = volatile_settings.clone();
     main_window.on_shortcut_pressed(move |text, ctrl, alt, shift| {
+        log::info!("Shortcut callback: text='{:?}', ctrl={}, alt={}, shift={}", text, ctrl, alt, shift);
         if let Some(ui) = shortcut_ui_handle.upgrade() {
             // Check if we are recording a shortcut in settings window
             if let Some(sw) = shortcut_settings_window_handle.upgrade() {
@@ -770,6 +899,36 @@ fn main() -> Result<(), slint::PlatformError> {
                         ui.set_always_on_top_enabled(!current);
                     }
                     InputEvent::ToggleThumbnails => ui.invoke_show_thumbnail_window(),
+                    InputEvent::SaveLayout1 => {
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            save_layout(&ui, &tw, &volatile_settings_clone_for_shortcuts, 0);
+                        }
+                    }
+                    InputEvent::SaveLayout2 => {
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            save_layout(&ui, &tw, &volatile_settings_clone_for_shortcuts, 1);
+                        }
+                    }
+                    InputEvent::SaveLayout3 => {
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            save_layout(&ui, &tw, &volatile_settings_clone_for_shortcuts, 2);
+                        }
+                    }
+                    InputEvent::LoadLayout1 => {
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            load_layout(&ui, &tw, &volatile_settings_clone_for_shortcuts, 0);
+                        }
+                    }
+                    InputEvent::LoadLayout2 => {
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            load_layout(&ui, &tw, &volatile_settings_clone_for_shortcuts, 1);
+                        }
+                    }
+                    InputEvent::LoadLayout3 => {
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            load_layout(&ui, &tw, &volatile_settings_clone_for_shortcuts, 2);
+                        }
+                    }
                     InputEvent::CropSelection => ui.invoke_crop_in_place(),
                     InputEvent::Exit => {
                         if ui.get_fullscreen_enabled() {

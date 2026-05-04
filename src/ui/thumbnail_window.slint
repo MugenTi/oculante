@@ -25,6 +25,7 @@ export component ThumbnailWindow inherits Window {
     callback previous_image();
     callback move_selection(int);
     callback ensure_visible();
+    callback shortcut_pressed(string, bool, bool, bool) -> bool;
 
     private property <length> thumb-size: 100px;
     private property <length> spacing: 10px;
@@ -52,6 +53,9 @@ export component ThumbnailWindow inherits Window {
     forward-focus: key_handler;
     key_handler := FocusScope {
         key-pressed(event) => {
+            if (root.shortcut_pressed(event.text, event.modifiers.control, event.modifiers.alt, event.modifiers.shift)) {
+                return accept;
+            }
             if (event.text == Key.Escape || event.text == "T" || event.text == "t") {
                 root.hide();
                 return accept;
