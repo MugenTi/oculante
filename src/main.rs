@@ -613,6 +613,9 @@ fn main() -> Result<(), slint::PlatformError> {
     }
     thumbnail_window.window().set_position(thumb_initial_pos);
     thumbnail_window.window().set_size(thumb_initial_size);
+    if volatile_settings.borrow().thumbnail_window_visible {
+        let _ = thumbnail_window.show();
+    }
 
     // --- Initialize AppState with current window geometry ---
     app_state.borrow_mut().last_window_position = initial_pos;
@@ -1522,13 +1525,18 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     let thumbnail_window_handle = thumbnail_window.as_weak();
+    let volatile_settings_clone_for_thumb = volatile_settings.clone();
     main_window.on_show_thumbnail_window(move || {
         if let Some(thumb_ui) = thumbnail_window_handle.upgrade() {
-            if thumb_ui.window().is_visible() {
+            let is_visible = thumb_ui.window().is_visible();
+            if is_visible {
                 let _ = thumb_ui.hide();
+                volatile_settings_clone_for_thumb.borrow_mut().thumbnail_window_visible = false;
             } else {
                 let _ = thumb_ui.show();
+                volatile_settings_clone_for_thumb.borrow_mut().thumbnail_window_visible = true;
             }
+            let _ = volatile_settings_clone_for_thumb.borrow().save_blocking();
         }
     });
 
