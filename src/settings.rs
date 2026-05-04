@@ -108,7 +108,6 @@ pub struct WindowLayout {
 pub struct VolatileSettings {
     pub favourite_images: HashSet<PathBuf>,
     pub recent_images: VecDeque<PathBuf>,
-    pub window_geometry: ((u32, u32), (u32, u32)), // No use
     pub window_position: LogicalPosition,
     pub window_size: LogicalSize,
     pub thumbnail_window_position: LogicalPosition,
@@ -127,7 +126,6 @@ impl Default for VolatileSettings {
         Self {
             favourite_images: Default::default(),
             recent_images: Default::default(),
-            window_geometry: Default::default(),
             window_position: LogicalPosition {
                 x: 100.0,
                 y: 100.0,
