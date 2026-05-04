@@ -631,9 +631,9 @@ fn main() -> Result<(), slint::PlatformError> {
     });
     apply_ui_theme(&main_window, &settings_window, &thumbnail_window, &color_correction_window, current_theme);
 
-    settings_window.set_vsync_enabled(persistent_settings.borrow().vsync);
-    settings_window
-        .set_show_checker_background(persistent_settings.borrow().show_checker_background);
+    main_window.set_show_status_messages(persistent_settings.borrow().show_status_messages);
+
+    settings_window.set_show_status_messages(persistent_settings.borrow().show_status_messages);
     settings_window.set_reopen_last_image(persistent_settings.borrow().reopen_last_image);
     settings_window.set_use_os_sorting(persistent_settings.borrow().use_os_sorting);
     settings_window.set_sort_criteria(persistent_settings.borrow().sort_criteria.clone().into());
@@ -2111,17 +2111,14 @@ fn main() -> Result<(), slint::PlatformError> {
     });
 
     let settings_clone = persistent_settings.clone();
-    settings_window.on_vsync_changed(move |enabled| {
+    let main_window_handle = main_window.as_weak();
+    settings_window.on_show_status_messages_changed(move |enabled| {
         let mut settings = settings_clone.borrow_mut();
-        settings.vsync = enabled;
+        settings.show_status_messages = enabled;
         let _ = settings.save_blocking();
-    });
-
-    let settings_clone = persistent_settings.clone();
-    settings_window.on_show_checker_background_changed(move |enabled| {
-        let mut settings = settings_clone.borrow_mut();
-        settings.show_checker_background = enabled;
-        let _ = settings.save_blocking();
+        if let Some(ui) = main_window_handle.upgrade() {
+            ui.set_show_status_messages(enabled);
+        }
     });
 
     let settings_clone = persistent_settings.clone();

@@ -111,6 +111,7 @@ export component AppWindow inherits Window {
     in-out property <bool> always_on_top_enabled: false;
     in-out property <bool> fullscreen_enabled: false;
     in-out property <bool> zen_mode_enabled: false;
+    in-out property <bool> show_status_messages: true;
     in-out property <bool> thumbnail_window_is_visible: false;
 
     // --- Internal state for dragging ---
@@ -641,7 +642,7 @@ export component AppWindow inherits Window {
                 padding: 5px;
                 padding-left: 10px;
                 padding-right: 10px;
-                Text {
+                if (root.show_status_messages) : Text {
                     font-size: 13px;
                     text: root.status_text;
                     vertical-alignment: center;

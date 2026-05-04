@@ -18,8 +18,7 @@ export component SettingsWindow inherits Window {
 
     // --- Properties for settings ---
     in-out property <string> selected_theme: "Dark";
-    in-out property <bool> vsync_enabled: true;
-    in-out property <bool> show_checker_background: false;
+    in-out property <bool> show_status_messages: true;
     in-out property <bool> reopen_last_image: true;
     in-out property <bool> use_os_sorting: true;
     in-out property <string> sort_criteria: "Name";
@@ -40,8 +39,7 @@ export component SettingsWindow inherits Window {
 
     // --- Callbacks to notify Rust of changes ---
     callback theme_changed(string);
-    callback vsync_changed(bool);
-    callback show_checker_background_changed(bool);
+    callback show_status_messages_changed(bool);
     callback reopen_last_image_changed(bool);
     callback clear_cache();
     callback use_os_sorting_changed(bool);
@@ -136,15 +134,9 @@ export component SettingsWindow inherits Window {
 
                 // --- General Section ---
                 CheckBox {
-                    text: "Enable V-Sync";
-                    checked <=> root.vsync_enabled;
-                    toggled => { root.vsync_changed(self.checked); }
-                }
-                
-                CheckBox {
-                    text: "Show checker background";
-                    checked <=> root.show_checker_background;
-                    toggled => { root.show_checker_background_changed(self.checked); }
+                    text: "Show status messages";
+                    checked <=> root.show_status_messages;
+                    toggled => { root.show_status_messages_changed(self.checked); }
                 }
 
                 CheckBox {
