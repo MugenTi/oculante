@@ -202,7 +202,7 @@ export component SettingsWindow inherits Window {
                         selected => { root.default_save_format_changed(self.current-value); }
                     }
                 }
-                if (root.default_save_format == "Jpg") : HorizontalLayout {
+                HorizontalLayout {
                     spacing: 10px;
                     alignment: start;
                     Text { text: "Jpeg quality:"; vertical-alignment: center; width: 100px; color: Theme.foreground; }
