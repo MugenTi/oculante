@@ -1248,8 +1248,8 @@ fn main() -> Result<(), slint::PlatformError> {
                 let main_window_size = app_state.last_window_size;
                 
                 // ColorCorrectionWindow has preferred-width: 960px and preferred-height: 800px
-                let cc_width = 960.0;
-                let cc_height = 800.0;
+                let cc_width = 952.0;
+                let cc_height = 754.0;
 
                 let x = main_window_pos.x + (main_window_size.width - cc_width) / 2.0;
                 let y = main_window_pos.y + (main_window_size.height - cc_height) / 2.0;
