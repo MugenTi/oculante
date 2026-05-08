@@ -36,6 +36,12 @@ pub enum ColorTheme {
     System,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum ZoomMode {
+    Multiplier,
+    Additive,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct PersistentSettings {
@@ -50,6 +56,8 @@ pub struct PersistentSettings {
     pub crop_aspect_ratio: String,
     pub default_save_format: String,
     pub jpeg_quality: u32,
+    pub zoom_mode: ZoomMode,
+    pub zoom_value: f32,
 }
 
 impl Default for PersistentSettings {
@@ -66,6 +74,8 @@ impl Default for PersistentSettings {
             crop_aspect_ratio: "Free".into(),
             default_save_format: "Png".into(),
             jpeg_quality: 85,
+            zoom_mode: ZoomMode::Multiplier,
+            zoom_value: 0.1,
         }
     }
 }

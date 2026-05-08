@@ -713,6 +713,11 @@ fn main() -> Result<(), slint::PlatformError> {
     settings_window.set_crop_aspect_ratio(persistent_settings.borrow().crop_aspect_ratio.clone().into());
     settings_window.set_default_save_format(persistent_settings.borrow().default_save_format.clone().into());
     settings_window.set_jpeg_quality(persistent_settings.borrow().jpeg_quality as i32);
+    settings_window.set_selected_zoom_mode(match persistent_settings.borrow().zoom_mode {
+        voutil::settings::ZoomMode::Multiplier => "Multiplier".into(),
+        voutil::settings::ZoomMode::Additive => "Additive".into(),
+    });
+    settings_window.set_zoom_value(persistent_settings.borrow().zoom_value);
     populate_shortcut_list(&settings_window, &persistent_settings.borrow().shortcuts);
 
     // Set initial current directory based on last opened directory
@@ -1701,17 +1706,28 @@ fn main() -> Result<(), slint::PlatformError> {
 
     let main_window_handle = main_window.as_weak();
     let volatile_settings_clone = volatile_settings.clone();
+    let persistent_settings_clone_for_zoom = persistent_settings.clone();
     main_window.on_zoom_image(move |delta_y, mouse_x, mouse_y| {
         if let Some(ui) = main_window_handle.upgrade() {
             let mut volatile = volatile_settings_clone.borrow_mut();
+            let persistent = persistent_settings_clone_for_zoom.borrow();
             let old_scale = volatile.image_scale;
+
+            let zoom_val = persistent.zoom_value as f64;
             let new_scale = if delta_y < 0.0 {
-                old_scale * 1.1
+                match persistent.zoom_mode {
+                    voutil::settings::ZoomMode::Multiplier => old_scale * (1.0 + zoom_val),
+                    voutil::settings::ZoomMode::Additive => old_scale + zoom_val,
+                }
             } else {
-                old_scale / 1.1
+                match persistent.zoom_mode {
+                    voutil::settings::ZoomMode::Multiplier => old_scale / (1.0 + zoom_val),
+                    voutil::settings::ZoomMode::Additive => old_scale - zoom_val,
+                }
             }
             .max(0.1)
             .min(10.0);
+
             let old_image_x = ui.get_image_x() as f64;
             let old_image_y = ui.get_image_y() as f64;
             let mouse_img_x = (mouse_x as f64 - old_image_x) / old_scale;
@@ -2334,6 +2350,24 @@ fn main() -> Result<(), slint::PlatformError> {
     settings_window.on_jpeg_quality_changed(move |val| {
         let mut settings = settings_clone.borrow_mut();
         settings.jpeg_quality = val as u32;
+        let _ = settings.save_blocking();
+    });
+
+    let settings_clone = persistent_settings.clone();
+    settings_window.on_zoom_mode_changed(move |val| {
+        let mut settings = settings_clone.borrow_mut();
+        settings.zoom_mode = match val.as_str() {
+            "Multiplier" => voutil::settings::ZoomMode::Multiplier,
+            "Additive" => voutil::settings::ZoomMode::Additive,
+            _ => voutil::settings::ZoomMode::Multiplier,
+        };
+        let _ = settings.save_blocking();
+    });
+
+    let settings_clone = persistent_settings.clone();
+    settings_window.on_zoom_value_changed(move |val| {
+        let mut settings = settings_clone.borrow_mut();
+        settings.zoom_value = val;
         let _ = settings.save_blocking();
     });
 

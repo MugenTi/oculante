@@ -26,6 +26,8 @@ export component SettingsWindow inherits Window {
     in-out property <string> crop_aspect_ratio: "Free";
     in-out property <string> default_save_format: "Png";
     in-out property <int> jpeg_quality: 85;
+    in-out property <string> selected_zoom_mode: "Multiplier";
+    in-out property <float> zoom_value: 0.1;
     in-out property <[ShortcutEntry]> shortcut_list;
     in-out property <string> recording_event_type: ""; // Empty if not recording
     in-out property <string> recording_description: "";
@@ -36,6 +38,7 @@ export component SettingsWindow inherits Window {
     private property <[string]> theme_options: ["Light", "Dark", "System"];
     private property <[string]> aspect_options: ["Free", "1:1", "1:2", "2:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9"];
     private property <[string]> format_options: ["Png", "Jpg", "Bmp", "WebP"];
+    private property <[string]> zoom_mode_options: ["Multiplier", "Additive"];
 
     // --- Callbacks to notify Rust of changes ---
     callback theme_changed(string);
@@ -48,6 +51,8 @@ export component SettingsWindow inherits Window {
     callback crop_aspect_ratio_changed(string);
     callback default_save_format_changed(string);
     callback jpeg_quality_changed(int);
+    callback zoom_mode_changed(string);
+    callback zoom_value_changed(float);
     callback reset_window_geometry();
     callback start_recording(string);
     callback clear_shortcuts(string);
@@ -83,6 +88,12 @@ export component SettingsWindow inherits Window {
         if (f == "Jpg") { return 1; }
         if (f == "Bmp") { return 2; }
         if (f == "WebP") { return 3; }
+        return 0;
+    }
+
+    pure function get_zoom_mode_index(m: string) -> int {
+        if (m == "Multiplier") { return 0; }
+        if (m == "Additive") { return 1; }
         return 0;
     }
 
@@ -143,6 +154,39 @@ export component SettingsWindow inherits Window {
                     text: "Re-open last image on startup";
                     checked <=> root.reopen_last_image;
                     toggled => { root.reopen_last_image_changed(self.checked); }
+                }
+
+                Rectangle { background: Theme.border-color; height: 1px; }
+
+                // --- Zoom Section ---
+                Text { text: "Zoom Settings"; font-size: 1.1rem; font-weight: 700; color: Theme.foreground; }
+                HorizontalLayout {
+                    spacing: 10px;
+                    alignment: start;
+                    Text { text: "Zoom mode:"; vertical-alignment: center; color: Theme.foreground; }
+                    ComboBox {
+                        model: root.zoom_mode_options;
+                        current-value <=> root.selected_zoom_mode;
+                        current-index: root.get_zoom_mode_index(root.selected_zoom_mode);
+                        selected => { root.zoom_mode_changed(self.current-value); }
+                    }
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    alignment: start;
+                    Text { text: "Zoom value:"; vertical-alignment: center; width: 100px; color: Theme.foreground; }
+                    Slider {
+                        width: 200px; minimum: 10; maximum: 100; value: root.zoom_value * 100;
+                        changed(val) => { 
+                            let quantized = Math.round(val / 5) * 5;
+                            root.zoom_value = quantized / 100;
+                            root.zoom_value_changed(root.zoom_value); 
+                        }
+                    }
+                    Text { 
+                        text: (root.selected_zoom_mode == "Multiplier") ? (1.0 + root.zoom_value) + "x" : Math.round(root.zoom_value * 100) + "%"; 
+                        vertical-alignment: center; color: Theme.foreground; 
+                    }
                 }
 
                 Rectangle { background: Theme.border-color; height: 1px; }
