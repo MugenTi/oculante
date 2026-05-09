@@ -105,6 +105,20 @@ export component SettingsWindow inherits Window {
         return 0;
     }
 
+    pure function get_sort_criteria_index(c: string) -> int {
+        if (c == "Name") { return 0; }
+        if (c == "Modified time") { return 1; }
+        if (c == "Created time") { return 2; }
+        if (c == "Size") { return 3; }
+        return 0;
+    }
+
+    pure function get_sort_order_index(o: string) -> int {
+        if (o == "Ascending") { return 0; }
+        if (o == "Descending") { return 1; }
+        return 0;
+    }
+
     forward-focus: key_handler;
     key_handler := FocusScope {
         property <bool> _trigger: root.focus-trigger;
@@ -270,19 +284,21 @@ export component SettingsWindow inherits Window {
                     checked <=> root.use_os_sorting;
                     toggled => { root.use_os_sorting_changed(self.checked); }
                 }
-                if !root.use_os_sorting : HorizontalLayout {
+                HorizontalLayout {
                     spacing: 10px;
                     alignment: start;
                     Text { text: "Sort by:"; vertical-alignment: center; color: Theme.foreground; }
                     ComboBox {
                         model: ["Name", "Modified time", "Created time", "Size"];
                         current-value <=> root.sort_criteria;
+                        current-index: root.get_sort_criteria_index(root.sort_criteria);
                         selected => { root.sort_criteria_changed(self.current-value); }
                     }
                     Text { text: "Order:"; vertical-alignment: center; color: Theme.foreground; }
                     ComboBox {
                         model: ["Ascending", "Descending"];
                         current-value <=> root.sort_order;
+                        current-index: root.get_sort_order_index(root.sort_order);
                         selected => { root.sort_order_changed(self.current-value); }
                     }
                 }

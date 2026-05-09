@@ -399,7 +399,7 @@ fn set_image(
                             paths.sort_by_key(|p| std::fs::metadata(p).map(|m| m.len()).unwrap_or(0));
                         }
                         _ => {
-                            // Default to Name
+                            // Default to Name (alphabetical)
                             paths.sort();
                         }
                     }
