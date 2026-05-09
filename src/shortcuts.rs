@@ -23,6 +23,8 @@ pub enum InputEvent {
     ZenMode,
     PerfectFullscreen,
     ToggleThumbnails,
+    FirstImage,
+    LastImage,
     SaveLayout1,
     SaveLayout2,
     SaveLayout3,
@@ -53,6 +55,8 @@ impl InputEvent {
             InputEvent::ZenMode => "Toggle Zen Mode",
             InputEvent::PerfectFullscreen => "Fullscreen (Zen + Reset)",
             InputEvent::ToggleThumbnails => "Toggle Thumbnails",
+            InputEvent::FirstImage => "Jump to First Image",
+            InputEvent::LastImage => "Jump to Last Image",
             InputEvent::SaveLayout1 => "Save Layout 1",
             InputEvent::SaveLayout2 => "Save Layout 2",
             InputEvent::SaveLayout3 => "Save Layout 3",
@@ -147,6 +151,8 @@ pub fn slint_to_human_readable(key: &str) -> String {
     if key == "\u{f703}" || key == "\u{f061}" || key == SharedString::from(Key::RightArrow).as_str() { return "Right".into(); }
     if key == "\u{f700}" || key == "\u{f062}" || key == SharedString::from(Key::UpArrow).as_str() { return "Up".into(); }
     if key == "\u{f701}" || key == "\u{f063}" || key == SharedString::from(Key::DownArrow).as_str() { return "Down".into(); }
+    if key == SharedString::from(Key::Home).as_str() { return "Home".into(); }
+    if key == SharedString::from(Key::End).as_str() { return "End".into(); }
     if key == SharedString::from(Key::F1).as_str() { return "F1".into(); }
     if key == SharedString::from(Key::F2).as_str() { return "F2".into(); }
     if key == SharedString::from(Key::F3).as_str() { return "F3".into(); }
@@ -174,6 +180,8 @@ pub fn human_readable_to_slint(name: &str) -> String {
         "RIGHT" => "\u{f703}".to_string(),
         "UP" => "\u{f700}".to_string(),
         "DOWN" => "\u{f701}".to_string(),
+        "HOME" => SharedString::from(Key::Home).to_string(),
+        "END" => SharedString::from(Key::End).to_string(),
         "F1" => SharedString::from(Key::F1).to_string(),
         "F2" => SharedString::from(Key::F2).to_string(),
         "F3" => SharedString::from(Key::F3).to_string(),
@@ -208,6 +216,8 @@ impl ShortcutExt for Shortcuts {
         s.insert(InputEvent::Fullscreen, vec![SimultaneousKeypresses::new("F")]);
         s.insert(InputEvent::AlwaysOnTop, vec![SimultaneousKeypresses::new("T").ctrl()]);
         s.insert(InputEvent::ToggleThumbnails, vec![SimultaneousKeypresses::new("T")]);
+        s.insert(InputEvent::FirstImage, vec![SimultaneousKeypresses::new("Home")]);
+        s.insert(InputEvent::LastImage, vec![SimultaneousKeypresses::new("End")]);
         s.insert(InputEvent::CropSelection, vec![SimultaneousKeypresses::new("Y").ctrl()]);
         s.insert(InputEvent::Exit, vec![
             SimultaneousKeypresses::new("Esc"),

@@ -621,6 +621,61 @@ fn show_next_image(
     }
 }
 
+fn jump_to_first_image(
+    ui: &AppWindow,
+    thumb_ui: &ThumbnailWindow,
+    app_state: &mut AppState,
+    volatile_settings: &Rc<RefCell<VolatileSettings>>,
+    persistent_settings: &Rc<RefCell<PersistentSettings>>,
+) {
+    if !app_state.image_list.is_empty() {
+        let mut index = 0;
+        while index < app_state.image_list.len() {
+            let path = app_state.image_list[index].clone();
+            if set_image(
+                ui,
+                thumb_ui,
+                app_state,
+                path,
+                volatile_settings,
+                persistent_settings,
+            ) {
+                break;
+            }
+            index += 1;
+        }
+    }
+}
+
+fn jump_to_last_image(
+    ui: &AppWindow,
+    thumb_ui: &ThumbnailWindow,
+    app_state: &mut AppState,
+    volatile_settings: &Rc<RefCell<VolatileSettings>>,
+    persistent_settings: &Rc<RefCell<PersistentSettings>>,
+) {
+    if !app_state.image_list.is_empty() {
+        let mut index = app_state.image_list.len() - 1;
+        loop {
+            let path = app_state.image_list[index].clone();
+            if set_image(
+                ui,
+                thumb_ui,
+                app_state,
+                path,
+                volatile_settings,
+                persistent_settings,
+            ) {
+                break;
+            }
+            if index == 0 {
+                break;
+            }
+            index -= 1;
+        }
+    }
+}
+
 fn show_previous_image(
     ui: &AppWindow,
     thumb_ui: &ThumbnailWindow,
@@ -820,10 +875,12 @@ fn main() -> Result<(), slint::PlatformError> {
         }
         false
     });
+
     let volatile_settings_clone_for_thumb_shortcuts = volatile_settings.clone();
     let thumb_ui_handle_for_shortcuts = thumbnail_window.as_weak();
     let main_window_handle_for_thumb_shortcuts = main_window.as_weak();
     let persistent_settings_clone_for_thumb_shortcuts = persistent_settings.clone();
+    let app_state_clone_for_thumb_shortcuts = app_state.clone();
     thumbnail_window.on_shortcut_pressed(move |text, ctrl, alt, shift| {
         if let Some(ui) = main_window_handle_for_thumb_shortcuts.upgrade() {
             if let Some(command) = lookup(
@@ -870,6 +927,20 @@ fn main() -> Result<(), slint::PlatformError> {
                         }
                         return true;
                     }
+                    InputEvent::FirstImage => {
+                        let mut app = app_state_clone_for_thumb_shortcuts.borrow_mut();
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            jump_to_first_image(&ui, &tw, &mut app, &volatile_settings_clone_for_thumb_shortcuts, &persistent_settings_clone_for_thumb_shortcuts);
+                        }
+                        return true;
+                    }
+                    InputEvent::LastImage => {
+                        let mut app = app_state_clone_for_thumb_shortcuts.borrow_mut();
+                        if let Some(tw) = thumb_ui_handle_for_shortcuts.upgrade() {
+                            jump_to_last_image(&ui, &tw, &mut app, &volatile_settings_clone_for_thumb_shortcuts, &persistent_settings_clone_for_thumb_shortcuts);
+                        }
+                        return true;
+                    }
                     _ => {}
                 }
             }
@@ -877,11 +948,12 @@ fn main() -> Result<(), slint::PlatformError> {
         false
     });
 
-    let shortcut_settings_clone = persistent_settings.clone();
+    let shortcut_settings_clone_main = persistent_settings.clone();
     let shortcut_ui_handle = main_window.as_weak();
     let shortcut_settings_window_handle = settings_window.as_weak();
     let shortcut_thumbnail_window_handle = thumbnail_window.as_weak();
     let volatile_settings_clone_for_shortcuts = volatile_settings.clone();
+    let app_state_clone_for_main_shortcuts = app_state.clone();
     main_window.on_shortcut_pressed(move |text, ctrl, alt, shift| {
         log::info!("Shortcut callback: text='{:?}', ctrl={}, alt={}, shift={}", text, ctrl, alt, shift);
         if let Some(ui) = shortcut_ui_handle.upgrade() {
@@ -894,7 +966,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         return true;
                     }
 
-                    let mut settings = shortcut_settings_clone.borrow_mut();
+                    let mut settings = shortcut_settings_clone_main.borrow_mut();
                     let mut target_event = None;
                     for event in settings.shortcuts.keys() {
                         if format!("{:?}", event) == event_type_str.as_str() {
@@ -926,7 +998,7 @@ fn main() -> Result<(), slint::PlatformError> {
                 }
             }
 
-            if let Some(command) = lookup(&shortcut_settings_clone.borrow().shortcuts, &text, ctrl, alt, shift) {
+            if let Some(command) = lookup(&shortcut_settings_clone_main.borrow().shortcuts, &text, ctrl, alt, shift) {
                 match command {
                     InputEvent::OpenFile => ui.invoke_request_open_file(),
                     InputEvent::Fullscreen => {
@@ -983,6 +1055,18 @@ fn main() -> Result<(), slint::PlatformError> {
                     }
                     InputEvent::PreviousImage => ui.invoke_previous_image(),
                     InputEvent::NextImage => ui.invoke_next_image(),
+                    InputEvent::FirstImage => {
+                        let mut app = app_state_clone_for_main_shortcuts.borrow_mut();
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            jump_to_first_image(&ui, &tw, &mut app, &volatile_settings_clone_for_shortcuts, &shortcut_settings_clone_main);
+                        }
+                    }
+                    InputEvent::LastImage => {
+                        let mut app = app_state_clone_for_main_shortcuts.borrow_mut();
+                        if let Some(tw) = shortcut_thumbnail_window_handle.upgrade() {
+                            jump_to_last_image(&ui, &tw, &mut app, &volatile_settings_clone_for_shortcuts, &shortcut_settings_clone_main);
+                        }
+                    }
                     InputEvent::ZoomActualSize => {
                         ui.invoke_apply_view_one_to_one_properties();
                         ui.invoke_view_one_to_one();
