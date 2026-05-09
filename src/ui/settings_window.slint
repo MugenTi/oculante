@@ -28,6 +28,9 @@ export component SettingsWindow inherits Window {
     in-out property <int> jpeg_quality: 85;
     in-out property <string> selected_zoom_mode: "Multiplier";
     in-out property <float> zoom_value: 0.1;
+    in-out property <int> accent_r: 255;
+    in-out property <int> accent_g: 0;
+    in-out property <int> accent_b: 75;
     in-out property <[ShortcutEntry]> shortcut_list;
     in-out property <string> recording_event_type: ""; // Empty if not recording
     in-out property <string> recording_description: "";
@@ -53,6 +56,7 @@ export component SettingsWindow inherits Window {
     callback jpeg_quality_changed(int);
     callback zoom_mode_changed(string);
     callback zoom_value_changed(float);
+    callback accent_color_changed(int, int, int);
     callback reset_window_geometry();
     callback start_recording(string);
     callback clear_shortcuts(string);
@@ -186,6 +190,60 @@ export component SettingsWindow inherits Window {
                     Text { 
                         text: (root.selected_zoom_mode == "Multiplier") ? (1.0 + root.zoom_value) + "x" : Math.round(root.zoom_value * 100) + "%"; 
                         vertical-alignment: center; color: Theme.foreground; 
+                    }
+                }
+
+                Rectangle { background: Theme.border-color; height: 1px; }
+
+                // --- Accent Color Section ---
+                Text { text: "Accent Color"; font-size: 1.1rem; font-weight: 700; color: Theme.foreground; }
+                HorizontalLayout {
+                    spacing: 20px;
+                    alignment: start;
+                    
+                    // RGB Sliders
+                    VerticalLayout {
+                        spacing: 5px;
+                        width: 300px;
+                        HorizontalLayout {
+                            Text { text: "R:"; width: 20px; vertical-alignment: center; color: Theme.foreground; }
+                            Slider {
+                                minimum: 0; maximum: 255; value: root.accent_r;
+                                changed(val) => { root.accent_r = Math.round(val); root.accent_color_changed(root.accent_r, root.accent_g, root.accent_b); }
+                            }
+                            Text { text: root.accent_r; width: 30px; vertical-alignment: center; horizontal-alignment: right; color: Theme.foreground; }
+                        }
+                        HorizontalLayout {
+                            Text { text: "G:"; width: 20px; vertical-alignment: center; color: Theme.foreground; }
+                            Slider {
+                                minimum: 0; maximum: 255; value: root.accent_g;
+                                changed(val) => { root.accent_g = Math.round(val); root.accent_color_changed(root.accent_r, root.accent_g, root.accent_b); }
+                            }
+                            Text { text: root.accent_g; width: 30px; vertical-alignment: center; horizontal-alignment: right; color: Theme.foreground; }
+                        }
+                        HorizontalLayout {
+                            Text { text: "B:"; width: 20px; vertical-alignment: center; color: Theme.foreground; }
+                            Slider {
+                                minimum: 0; maximum: 255; value: root.accent_b;
+                                changed(val) => { root.accent_b = Math.round(val); root.accent_color_changed(root.accent_r, root.accent_g, root.accent_b); }
+                            }
+                            Text { text: root.accent_b; width: 30px; vertical-alignment: center; horizontal-alignment: right; color: Theme.foreground; }
+                        }
+                    }
+
+                    // Preview
+                    VerticalLayout {
+                        alignment: center;
+                        spacing: 5px;
+                        Text { text: "Preview"; horizontal-alignment: center; color: Theme.foreground; font-size: 12px; }
+                        Rectangle {
+                            width: 60px;
+                            height: 60px;
+                            background: rgb(root.accent_r, root.accent_g, root.accent_b);
+                            border-width: 1px;
+                            border-color: Theme.border-color;
+                            border-radius: 4px;
+                        }
                     }
                 }
 

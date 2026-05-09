@@ -47,6 +47,7 @@ pub enum ZoomMode {
 pub struct PersistentSettings {
     pub shortcuts: Shortcuts,
     pub theme: ColorTheme,
+    pub accent_color: [u8; 3],
     pub decoders: DecoderSettings,
     pub show_status_messages: bool,
     pub reopen_last_image: bool,
@@ -65,6 +66,7 @@ impl Default for PersistentSettings {
         PersistentSettings {
             shortcuts: Shortcuts::default_keys(),
             theme: ColorTheme::Dark,
+            accent_color: [76, 175, 80],
             decoders: Default::default(),
             show_status_messages: true,
             reopen_last_image: true,

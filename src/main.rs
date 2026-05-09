@@ -229,6 +229,7 @@ fn apply_ui_theme(
     thumb_ui: &ThumbnailWindow,
     color_correction_ui: &ColorCorrectionWindow,
     choice: voutil::settings::ColorTheme,
+    accent_color: [u8; 3],
 ) {
     let is_dark = match choice {
         voutil::settings::ColorTheme::Dark => true,
@@ -239,6 +240,12 @@ fn apply_ui_theme(
             _ => true, // Fallback to dark
         },
     };
+
+    let slint_accent_color = slint::Color::from_rgb_u8(accent_color[0], accent_color[1], accent_color[2]);
+    main_ui.global::<Theme>().set_accent_color(slint_accent_color.clone());
+    settings_ui.global::<Theme>().set_accent_color(slint_accent_color.clone());
+    thumb_ui.global::<Theme>().set_accent_color(slint_accent_color.clone());
+    color_correction_ui.global::<Theme>().set_accent_color(slint_accent_color);
 
     // Only update if the theme state has actually changed
     if main_ui.global::<Theme>().get_is_dark() != is_dark {
@@ -696,15 +703,19 @@ fn main() -> Result<(), slint::PlatformError> {
     main_window.set_status_text("Ready. Open a file to begin.".into());
     
     let current_theme = persistent_settings.borrow().theme.clone();
+    let current_accent = persistent_settings.borrow().accent_color;
     settings_window.set_selected_theme(match current_theme {
         voutil::settings::ColorTheme::Light => "Light".into(),
         voutil::settings::ColorTheme::System => "System".into(),
         _ => "Dark".into(),
     });
-    apply_ui_theme(&main_window, &settings_window, &thumbnail_window, &color_correction_window, current_theme);
+    apply_ui_theme(&main_window, &settings_window, &thumbnail_window, &color_correction_window, current_theme, current_accent);
 
     main_window.set_show_status_messages(persistent_settings.borrow().show_status_messages);
 
+    settings_window.set_accent_r(current_accent[0] as i32);
+    settings_window.set_accent_g(current_accent[1] as i32);
+    settings_window.set_accent_b(current_accent[2] as i32);
     settings_window.set_show_status_messages(persistent_settings.borrow().show_status_messages);
     settings_window.set_reopen_last_image(persistent_settings.borrow().reopen_last_image);
     settings_window.set_use_os_sorting(persistent_settings.borrow().use_os_sorting);
@@ -2166,7 +2177,8 @@ fn main() -> Result<(), slint::PlatformError> {
                         settings_window_handle_for_tick.upgrade(),
                         color_correction_ui_for_tick.upgrade(),
                     ) {
-                        apply_ui_theme(&ui, &sw, &thumb_ui, &ccw, theme_choice);
+                        let accent = persistent_settings_for_tick.borrow().accent_color;
+                        apply_ui_theme(&ui, &sw, &thumb_ui, &ccw, theme_choice, accent);
                     }
                 }
             }
@@ -2288,11 +2300,11 @@ fn main() -> Result<(), slint::PlatformError> {
             let mut settings = settings_clone.borrow_mut();
             settings.theme = choice.clone();
             let _ = settings.save_blocking();
-            
-            apply_ui_theme(&ui, &sw, &tw, &ccw, choice);
-        }
-    });
+            let accent = settings.accent_color;
 
+            apply_ui_theme(&ui, &sw, &tw, &ccw, choice, accent);
+            }
+            });
     let settings_clone = persistent_settings.clone();
     let main_window_handle = main_window.as_weak();
     settings_window.on_show_status_messages_changed(move |enabled| {
@@ -2351,6 +2363,27 @@ fn main() -> Result<(), slint::PlatformError> {
         let mut settings = settings_clone.borrow_mut();
         settings.jpeg_quality = val as u32;
         let _ = settings.save_blocking();
+    });
+
+    let settings_clone = persistent_settings.clone();
+    let main_ui_for_accent = main_window.as_weak();
+    let settings_ui_for_accent = settings_window.as_weak();
+    let thumb_ui_for_accent = thumbnail_window.as_weak();
+    let cc_ui_for_accent = color_correction_window.as_weak();
+    settings_window.on_accent_color_changed(move |r, g, b| {
+        let mut settings = settings_clone.borrow_mut();
+        settings.accent_color = [r as u8, g as u8, b as u8];
+        let _ = settings.save_blocking();
+        
+        if let (Some(ui), Some(sw), Some(tw), Some(ccw)) = (
+            main_ui_for_accent.upgrade(),
+            settings_ui_for_accent.upgrade(),
+            thumb_ui_for_accent.upgrade(),
+            cc_ui_for_accent.upgrade(),
+        ) {
+            let theme = settings.theme.clone();
+            apply_ui_theme(&ui, &sw, &tw, &ccw, theme, settings.accent_color);
+        }
     });
 
     let settings_clone = persistent_settings.clone();
