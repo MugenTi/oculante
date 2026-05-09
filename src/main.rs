@@ -716,6 +716,7 @@ fn main() -> Result<(), slint::PlatformError> {
     settings_window.set_accent_r(current_accent[0] as i32);
     settings_window.set_accent_g(current_accent[1] as i32);
     settings_window.set_accent_b(current_accent[2] as i32);
+    settings_window.set_accent_hex(format!("#{:02X}{:02X}{:02X}", current_accent[0], current_accent[1], current_accent[2]).into());
     settings_window.set_show_status_messages(persistent_settings.borrow().show_status_messages);
     settings_window.set_reopen_last_image(persistent_settings.borrow().reopen_last_image);
     settings_window.set_use_os_sorting(persistent_settings.borrow().use_os_sorting);
@@ -2370,11 +2371,16 @@ fn main() -> Result<(), slint::PlatformError> {
     let settings_ui_for_accent = settings_window.as_weak();
     let thumb_ui_for_accent = thumbnail_window.as_weak();
     let cc_ui_for_accent = color_correction_window.as_weak();
+    let settings_ui_for_accent_hex = settings_window.as_weak();
     settings_window.on_accent_color_changed(move |r, g, b| {
         let mut settings = settings_clone.borrow_mut();
         settings.accent_color = [r as u8, g as u8, b as u8];
         let _ = settings.save_blocking();
         
+        if let Some(sw) = settings_ui_for_accent_hex.upgrade() {
+            sw.set_accent_hex(format!("#{:02X}{:02X}{:02X}", r, g, b).into());
+        }
+
         if let (Some(ui), Some(sw), Some(tw), Some(ccw)) = (
             main_ui_for_accent.upgrade(),
             settings_ui_for_accent.upgrade(),
@@ -2383,6 +2389,43 @@ fn main() -> Result<(), slint::PlatformError> {
         ) {
             let theme = settings.theme.clone();
             apply_ui_theme(&ui, &sw, &tw, &ccw, theme, settings.accent_color);
+        }
+    });
+
+    let settings_clone = persistent_settings.clone();
+    let main_ui_for_accent_hex_callback = main_window.as_weak();
+    let settings_ui_for_accent_hex_callback = settings_window.as_weak();
+    let thumb_ui_for_accent_hex_callback = thumbnail_window.as_weak();
+    let cc_ui_for_accent_hex_callback = color_correction_window.as_weak();
+    settings_window.on_accent_hex_changed(move |hex| {
+        let hex = hex.trim().trim_start_matches('#');
+        if hex.len() == 6 {
+            if let (Ok(r), Ok(g), Ok(b)) = (
+                u8::from_str_radix(&hex[0..2], 16),
+                u8::from_str_radix(&hex[2..4], 16),
+                u8::from_str_radix(&hex[4..6], 16),
+            ) {
+                let mut settings = settings_clone.borrow_mut();
+                settings.accent_color = [r, g, b];
+                let _ = settings.save_blocking();
+
+                if let Some(sw) = settings_ui_for_accent_hex_callback.upgrade() {
+                    sw.set_accent_r(r as i32);
+                    sw.set_accent_g(g as i32);
+                    sw.set_accent_b(b as i32);
+                    sw.set_accent_hex(format!("#{:02X}{:02X}{:02X}", r, g, b).into());
+                }
+
+                if let (Some(ui), Some(sw), Some(tw), Some(ccw)) = (
+                    main_ui_for_accent_hex_callback.upgrade(),
+                    settings_ui_for_accent_hex_callback.upgrade(),
+                    thumb_ui_for_accent_hex_callback.upgrade(),
+                    cc_ui_for_accent_hex_callback.upgrade(),
+                ) {
+                    let theme = settings.theme.clone();
+                    apply_ui_theme(&ui, &sw, &tw, &ccw, theme, settings.accent_color);
+                }
+            }
         }
     });
 

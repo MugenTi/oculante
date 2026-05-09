@@ -1,4 +1,4 @@
-import { CheckBox, Button, ComboBox, Slider, ScrollView, Palette } from "std-widgets.slint";
+import { CheckBox, Button, ComboBox, Slider, ScrollView, Palette, LineEdit } from "std-widgets.slint";
 import { Theme } from "./theme.slint";
 
 export struct ShortcutEntry {
@@ -31,6 +31,7 @@ export component SettingsWindow inherits Window {
     in-out property <int> accent_r: 255;
     in-out property <int> accent_g: 0;
     in-out property <int> accent_b: 75;
+    in-out property <string> accent_hex: "#4CAF50";
     in-out property <[ShortcutEntry]> shortcut_list;
     in-out property <string> recording_event_type: ""; // Empty if not recording
     in-out property <string> recording_description: "";
@@ -57,6 +58,7 @@ export component SettingsWindow inherits Window {
     callback zoom_mode_changed(string);
     callback zoom_value_changed(float);
     callback accent_color_changed(int, int, int);
+    callback accent_hex_changed(string);
     callback reset_window_geometry();
     callback start_recording(string);
     callback clear_shortcuts(string);
@@ -231,18 +233,22 @@ export component SettingsWindow inherits Window {
                         }
                     }
 
-                    // Preview
+                    // Preview and Hex Input
                     VerticalLayout {
                         alignment: center;
-                        spacing: 5px;
-                        Text { text: "Preview"; horizontal-alignment: center; color: Theme.foreground; font-size: 12px; }
+                        spacing: 10px;
                         Rectangle {
-                            width: 60px;
-                            height: 60px;
+                            width: 100px;
+                            height: 30px;
                             background: rgb(root.accent_r, root.accent_g, root.accent_b);
                             border-width: 1px;
                             border-color: Theme.border-color;
                             border-radius: 4px;
+                        }
+                        LineEdit {
+                            text <=> root.accent_hex;
+                            width: 100px;
+                            accepted => { root.accent_hex_changed(self.text); }
                         }
                     }
                 }
