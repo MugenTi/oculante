@@ -592,7 +592,14 @@ fn show_next_image(
 ) {
     if let Some(index) = app_state.current_image_index {
         if !app_state.image_list.is_empty() {
+            let wrap = persistent_settings.borrow().wrap_folder;
             let mut next_index = (index + 1) % app_state.image_list.len();
+
+            // If wrapping is disabled and we just wrapped to 0, stop.
+            if !wrap && next_index == 0 && index != 0 {
+                return;
+            }
+
             while next_index != index {
                 let path = app_state.image_list[next_index].clone();
                 if set_image(
@@ -606,6 +613,9 @@ fn show_next_image(
                     break;
                 }
                 next_index = (next_index + 1) % app_state.image_list.len();
+                if !wrap && next_index == 0 {
+                    break;
+                }
             }
         }
     }
@@ -620,7 +630,14 @@ fn show_previous_image(
 ) {
     if let Some(index) = app_state.current_image_index {
         if !app_state.image_list.is_empty() {
+            let wrap = persistent_settings.borrow().wrap_folder;
             let mut prev_index = (index + app_state.image_list.len() - 1) % app_state.image_list.len();
+
+            // If wrapping is disabled and we just wrapped to the last index, stop.
+            if !wrap && prev_index == app_state.image_list.len() - 1 && index == 0 {
+                return;
+            }
+
             while prev_index != index {
                 let path = app_state.image_list[prev_index].clone();
                 if set_image(
@@ -634,6 +651,9 @@ fn show_previous_image(
                     break;
                 }
                 prev_index = (prev_index + app_state.image_list.len() - 1) % app_state.image_list.len();
+                if !wrap && prev_index == app_state.image_list.len() - 1 {
+                    break;
+                }
             }
         }
     }
@@ -718,6 +738,8 @@ fn main() -> Result<(), slint::PlatformError> {
     settings_window.set_accent_b(current_accent[2] as i32);
     settings_window.set_accent_hex(format!("#{:02X}{:02X}{:02X}", current_accent[0], current_accent[1], current_accent[2]).into());
     settings_window.set_show_status_messages(persistent_settings.borrow().show_status_messages);
+    settings_window.set_wrap_folder(persistent_settings.borrow().wrap_folder);
+    thumbnail_window.set_wrap_folder(persistent_settings.borrow().wrap_folder);
     settings_window.set_reopen_last_image(persistent_settings.borrow().reopen_last_image);
     settings_window.set_use_os_sorting(persistent_settings.borrow().use_os_sorting);
     settings_window.set_sort_criteria(persistent_settings.borrow().sort_criteria.clone().into());
@@ -2314,6 +2336,17 @@ fn main() -> Result<(), slint::PlatformError> {
         let _ = settings.save_blocking();
         if let Some(ui) = main_window_handle.upgrade() {
             ui.set_show_status_messages(enabled);
+        }
+    });
+
+    let settings_clone = persistent_settings.clone();
+    let thumb_window_handle = thumbnail_window.as_weak();
+    settings_window.on_wrap_folder_changed(move |enabled| {
+        let mut settings = settings_clone.borrow_mut();
+        settings.wrap_folder = enabled;
+        let _ = settings.save_blocking();
+        if let Some(tw) = thumb_window_handle.upgrade() {
+            tw.set_wrap_folder(enabled);
         }
     });
 

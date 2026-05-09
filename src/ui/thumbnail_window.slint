@@ -17,6 +17,7 @@ export component ThumbnailWindow inherits Window {
     in property <[Thumbnail]> thumbnails;
     in-out property <string> selected-path;
     in-out property <int> selected-index: -1;
+    in-out property <bool> wrap-folder: true;
     changed selected-index => { root.ensure_visible(); }
 
     callback hide();
@@ -64,9 +65,23 @@ export component ThumbnailWindow inherits Window {
             if (len <= 0) { return reject; }
 
             if (event.text == Key.LeftArrow || event.text == "A" || event.text == "a") {
-                root.selected-index = Math.mod(root.selected-index - 1 + len, len);
+                let next_idx = root.selected-index - 1;
+                if (next_idx < 0) {
+                    if (root.wrap-folder) {
+                        root.selected-index = len - 1;
+                    }
+                } else {
+                    root.selected-index = next_idx;
+                }
             } else if (event.text == Key.RightArrow || event.text == "D" || event.text == "d") {
-                root.selected-index = Math.mod(root.selected-index + 1, len);
+                let next_idx = root.selected-index + 1;
+                if (next_idx >= len) {
+                    if (root.wrap-folder) {
+                        root.selected-index = 0;
+                    }
+                } else {
+                    root.selected-index = next_idx;
+                }
             } else if (event.text == Key.UpArrow || event.text == "W" || event.text == "w") {
                 root.selected-index = Math.max(0, root.selected-index - root.columns);
             } else if (event.text == Key.DownArrow || event.text == "S" || event.text == "s") {
