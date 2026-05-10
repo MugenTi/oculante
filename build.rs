@@ -1,6 +1,9 @@
 use std::{collections::HashMap, path::PathBuf};
 
 fn main() {
+    println!("cargo:rerun-if-changed=icon.ico");
+    println!("cargo:rerun-if-changed=src/ui");
+
     let library = HashMap::from([(
         "lucide".to_string(),
         PathBuf::from(lucide_slint::lib()),
