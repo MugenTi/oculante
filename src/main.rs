@@ -1141,12 +1141,14 @@ fn main() -> Result<(), slint::PlatformError> {
                     ("JPEG Image", vec!["jpg", "jpeg"]),
                     ("BMP Image", vec!["bmp"]),
                     ("WebP Image", vec!["webp"]),
+                    ("AVIF Image", vec!["avif"]),
                 ];
 
                 let preferred_name = match default_format.as_str() {
                     "Jpg" => "JPEG Image",
                     "Bmp" => "BMP Image",
                     "WebP" => "WebP Image",
+                    "Avif" => "AVIF Image",
                     _ => "PNG Image",
                 };
 
@@ -1188,6 +1190,7 @@ fn main() -> Result<(), slint::PlatformError> {
                     "Jpg" => "jpg",
                     "Bmp" => "bmp",
                     "WebP" => "webp",
+                    "Avif" => "avif",
                     _ => "png",
                 };
 
@@ -1226,6 +1229,7 @@ fn main() -> Result<(), slint::PlatformError> {
                         "jpg" | "jpeg" => FileEncoder::Jpg { quality },
                         "bmp" => FileEncoder::Bmp,
                         "webp" => FileEncoder::WebP,
+                        "avif" => FileEncoder::Avif,
                         _ => FileEncoder::Png { compressionlevel: CompressionLevel::Default },
                     };
 
